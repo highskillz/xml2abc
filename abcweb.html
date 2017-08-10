@@ -1,0 +1,148 @@
+<!DOCTYPE HTML>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<script src="jquery-1.11.1.min.js"></script>
+<script src="abc2svg-1.js"></script>
+<script src="abc2web.js"></script>
+<script src="xml2abc.js"></script>
+<style>
+ul        { margin: 0px; }
+label     { display: block; }
+input     { vertical-align: middle; }
+input[type=checkbox] { margin-top: 7px; }
+input[type=number]   { width: 3.5em; }
+audio     { display: none; margin-right:5px; vertical-align:middle; z-index:1; position: relative; }
+#vid, #vidyub { display: none; margin-right:5px; vertical-align:middle; height:100%; z-index:1; position: relative; }
+#meddiv   { text-align: center; height:95%; visibility:hidden; }
+#crediv   { display: inline-block; vertical-align:middle; text-align: left; font-size: small; z-index:1; position: relative; }
+#medbts   { position: absolute; left: 5px; font-size:small; visibility:hidden; }
+#medlbl   { display: block; margin-top: 5px; }
+#yvdlbl   { display: none; margin-top: 5px; }
+#drplbl, #yublbl { display: inline-block; }
+#drplbl:hover, #yublbl:hover:hover { background: #aaa; }
+#speed    { vertical-align: middle; }
+#help     { display: none;  background-color:#eee; font-size:small; width:800px; border: 1px solid black; padding: 5px; }
+#help td  { padding-left: 10px; }
+#help.showhlp { display: block; position: absolute; right:3px; top:5px; z-index:2; }
+#helpm    { text-align: center; padding: 3px; }
+#helpm:hover { background-color: #aaa; cursor: pointer; }
+#sync     { position: absolute; right: 0px; text-align: right; padding-right: 5px; font-size: small; visibility: hidden; z-index:2; }
+#sync #sync_out { display:none; position: relative; top:5px; background-color:#eee; width:11em; }
+#save, #implbl { float: left; } #implbl { background: #eee; }
+html, body  { margin:0px; height:100%; }
+body { -webkit-tap-highlight-color: transparent; -webkit-user-select: none; -webkit-touch-callout: none; }
+#buttons  { height:10%; }
+#buttons.video { height:50%; }
+#notation { overflow:auto; }
+#err      { overflow:auto; margin:0px; height:5%; background-color: #eee; visibility:hidden; }
+#err:hover { height:  50%; width:100%; position:absolute; top:50%; }
+#streep   { position:absolute; background-color:#aaa; opacity:0.0; height:10px; width:100%; }
+#abcfile, #mediafile, #yubfile { display: inline-block; }
+.dlog      { display:none; background-color:lightblue; position:absolute; left:30%; top:30%; width:30%; padding:10px; }
+#yubload  { top:10%; }
+#countin  { left:40%; width:1em; font-size:10em; z-index:2; color:green; background:none; }
+#menu     { background-color: #eee; position: relative; }
+#menu label:hover, #sync_out label:hover { background: #aaa; }
+#mbar:hover { background: #aaa; cursor: pointer; }
+.noheight { height: 0px !important; }
+.indrag   { background: #aaa; }
+.abcimp   { color: red; }
+</style>
+</head><body title="you can also drag/drop a score or preload file here">
+<div id="buttons">
+    <div style="height: 5px;"></div>
+    <span id="sync">
+        <div id="menu"><div id="mbar" style="padding: 4px;">Menu</div>
+            <label id="snclbl">enable sync<input id="synbox" type="checkbox" accesskey="e"/></label>
+            <label>speed ctrl<input id="spdctl" type="checkbox"/></label>
+            <label>loop mode<input id="lopctl" type="checkbox"/></label>
+            <label>file buttons<input id="btns" type="checkbox"/></label>
+            <label id="ncrlbl">no cursor<input id="nocsr" type="checkbox"/></label>
+            <label id="lnclbl">line cursor<input id="lncsr" type="checkbox"/></label>
+            <label>center player<input id="ctrmed" type="checkbox"/></label>
+            <label>center score<input id="ctrnot" type="checkbox"/></label>
+            <label>hide player<input id="noplyr" type="checkbox"/></label>
+            <label id="asclbl">autoscale<input id="autscl" type="checkbox"/></label>
+            <label>skip repeats<input id="repskip" type="checkbox"/></label>
+            <label>count in<input id="cntin" type="checkbox"/></label>
+            <label>metronome<input id="metro" type="checkbox"/></label>
+            <label id="helpm">help</label>
+        </div>
+        <div id="sync_out">
+            <div id="sync_info"></div>
+            <label>wait offset: <input id="woff" type="checkbox"></input></label>
+            <label id="implbl">import: <input id="impbox" type="checkbox"></input></label>
+            <label>jump: <input id="jump" type="checkbox"></input></label>
+            <button id="save">save</button>
+            <label>scramble: <input id="encr" type="checkbox"></input></label>
+        </div>
+    </span>
+    <div id="medbts">
+        <label><span id="abclbl">score file: </span><div id="abcfile"><input type="file" id="fknp" accept=".abc,.xml,.js" tabindex="1"/></div></label>
+        <label id="medlbl">media file: <div id="mediafile"><input type="file" id="mknp" accept="audio/*, video/*" tabindex="2"/></div></label>
+        <label id="yvdlbl">youtube id: <div id="yubfile">
+            <input type="text" id="yubid" size="11" value="qx-ymShyfIk" title="11 characters" pattern="[A-Za-z0-9\-_]{11}"/>
+            <input type="button" id="yknp" value="load"/>
+        </div></label>
+        <label id="drplbl">use dropbox:<input id="drpuse" type="checkbox" tabindex="3"/></label>
+        <label id="yublbl">use youtube:<input id="yubuse" type="checkbox" tabindex="4"/></label>
+    </div>
+    <div id="meddiv">
+        <audio id="aud" controls="controls">Your browser does not support the audio element.</audio>
+        <video id="vid" controls="controls">Your browser does not support the video element.</video>
+        <div id="vidyub"></div>
+        <div id="crediv">
+            <div id="credits"></div>
+            <form id="spdlbl">speed: 
+                <input id="speed" type="number" min="0.1" step="0.05" max="4.0" title="0.1 <= float <= 4.0"></input>
+            </form>
+        </div>
+    </div>
+</div>
+<div id="streep"></div>
+<div id="notation"></div>
+<pre id="err"></pre>
+<div id="saveDiv" style="display:none"></div>
+<div id="help">
+    Clicking in the margin of the score pauses/resumes the audio/video.<br>
+    The menu is explained in the <a href="http://wim.vree.org/js/readme.html">usage instructions</a><br>
+    <span>You can use the following keys:</span><ul>
+    <table>
+        <tr><td><b>p</b> or <b>z</b> or <b>y</b></td><td>pause/continue</td><td><b>a</b></td><td>toggle autoscale</td></tr>
+        <tr><td><b>]</b> or <b>c</b> </td><td>go to next measure</td>       <td><b>l</b></td><td>toggle line/measure cursor</td></tr>
+        <tr><td><b>[</b> or <b>x</b> </td><td>go to previous measure</td>   <td><b>h</b></td><td>toggle help</td><td><b>f</b></td><td>toggle file buttons</td></tr>
+        <tr><td><b>+</b>/<b>-</b>    </td><td>increase/decrease speed</td>  <td><b>m</b></td><td>toggle menu</td><td><b>s</b></td><td>toggle speed/loop</td></tr>
+    </table>
+    </ul>
+    In addition, when synchronization is enabled:<ul>
+    <table>
+        <tr><td><b>,</b></td><td>shorten the duration of the current measure</td>
+            <td><b>ctrl-,</b></td><td>shorten the initial offset (idle time before cursor starts moving).</td></tr>
+        <tr><td><b>.</b></td><td>lengthen the duration of the current measure</td>
+            <td><b>ctrl-.</b></td><td>lengthen the initial offset.</td></tr>
+        <tr><td><b>w</b> or<br/>save&nbsp;button</td>
+            <td colspan="3">save timings, abc code and other settings to a file (called a preload file).
+            Also works with dropbox. You can load a preload file with the score file button.
+            (see <a href="http://wim.vree.org/js/readme.html">usage instructions</a> for more info)
+            </td></tr>
+    </table></ul>
+    looping:<ul>In loop mode the first two clicks in the score set the left and right edge of the looping range.
+    (subsequent clicks adjust the closest range marker)
+    </ul>
+    synchronizing:<ul>
+        <li>When your audio file is synthesized from score, no manual synchronization is necessary.
+        Otherwise (e.g. live performance or video) you have to synchronize the media manually.</li>
+        <li>By clicking in a measure you synchronize the *first* beat of that measure to the audio.</li>
+        <li>Clicking in the first measure synchronizes the first beat (of the music) to (the first note) in the media file. This
+        sets the, so called, offset of the media file.</li>
+        <li>The duration of the current measure and offset are shown in the top right corner of the display.
+        You can precisely adjust these numbers with the keyboard sync commands (preferably when media is paused).</li>
+    </ul>
+</div>
+<pre id="wait" class="dlog">Loading, please wait ...</pre>
+<pre id="yubload" class="dlog">Youtube player loading, please wait ...</pre>
+<div id="countin" class="dlog"></div>
+</body>
+</html>

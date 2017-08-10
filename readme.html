@@ -1,0 +1,404 @@
+<!DOCTYPE HTML>
+<html><head>
+<meta charset="utf-8">
+<style>
+body { width: 900px; }
+.indent { margin-left: 30px; }
+.tab { border: thin black solid; margin-top:0.5em; margin-bottom:0.5em; }
+.tab td { padding:0.2em; vertical-align: top; }
+.tab tr:nth-child(even) { background-color: #eee; }
+li { margin-bottom: 5px; }
+</style>
+</head><body>
+<h3>Abcweb</h3>
+You can either start <em>abcweb</em> from
+<a href="http://wim.vree.org/js/abcweb.html">http://wim.vree.org/js/abcweb.html</a> or from a local copy of this
+file on your computer.<br>
+<em>Abcweb</em> also supports loading and saving on dropbox, but only when you start from the website.
+A local copy will not work with dropbox and only load/save files locally.
+How to use <em>abcweb</em> on a computer without internet connection is explained at
+<a href="#nonet">the end</a> of this page.
+
+<h3>Opening score and media files</h3>
+With the <em>score file</em> button you can open a MusicXml file (or an <a href="https://en.wikipedia.org/wiki/Abc_notation">ABC</a>
+text file) from the local computer (PC).
+When the &quot;<em>use dropbox</em>&quot; option is checked the <em>score file</em> button opens a Dropbox Chooser. This allows you
+to load score files directly from your dropbox.
+The same holds for the <em>media file</em> button. Normally local files are opened, but with dropbox enabled you can load
+the media from your dropbox. For video files there is a third possibility: &quot;<em>use youtube</em>&quot;. With this option checked the
+<em>media file</em> button changes into a text field where you can enter the youtube-id of the video you want to display.
+With both &quot;<em>use dropbox</em>&quot; and &quot;<em>use youtube</em>&quot; checked, you can load the score file from dropbox and
+the video from youtube.<br>
+When you have opened (and possibly synchronized) a score file and a media file you can save the result into a <a href="#preload">preload file</a>.
+This preload file will be saved locally or, when &quot;<em>use dropbox</em>&quot; is checked in your dropbox. Such a preload file can be opened
+with the <em>score file</em> button or by specifying it in the URL as explained in the section on <a href="#preload">saving and using a preload file</a>.
+Opening a preload file loads score an media and all settings as the were at the time of saving.
+
+<h3><a name="speed"></a>Speed</h3>
+Two buttons to the right of the media player change the play back speed. The button called <em>plus</em>
+increases and the button called <em>min</em> decreases the speed. Normal speed is 1.0. Each button click changes
+this factor by 0.1. The speed factor can range between 0.5 and 2.0. Synchronization (explained below) works at all speeds
+and can be done more precisely with lower speed settings.<p>
+
+<h3><a name="loop"></a>Looping</h3>
+When the <em>loop mode</em> menu item is checked, the first two clicks in the score
+set the left and right edge of a looping range. Each edge is marked with a bold red character:
+&apos;<b>&lt;</b>&apos; for the left side and &apos;<b>&gt;</b>&apos; for the right side. When clicking again in
+the score the loop marker closest to the click location is repositioned.<br>
+When both range markers are placed, play back will continuously loop between these points. The loop range can still
+be adjusted by clicking in the score near one of the markers (also when playing).
+The loop mode is switched off by unselecting the <em>loop mode</em> menu item. Both range markers are retained and when you enable
+loop mode again they will reappear (en be active immediately).
+</p>
+
+<h3>Menu</h3>
+Several settings can be changed with checkboxes via the menu. When you make a <a href="#preload">preload file</a>, all
+settings are saved, except the &quot;<em>enable sync</em>&quot; setting.
+<table class="indent tab">
+<a name="synbx"></a>
+<tr><td><em>enable sync</em></td>
+    <td>Turns on <a href="#sync">synchronization</a> mode. A <a href="#synpn">special panel</a> appears in the top right corner.
+    This panel also contains the <a href="#save"><em>save button</em></a></td></tr>
+<tr><td><em>speed ctrl</em></td>
+    <td>Shows the <a href="#speed">speed</a> buttons.</td></tr>
+<tr><td><em>loop mode</em></td>
+    <td>Enables the <a href="#loop">loop mode</a> when this item is checked.</td></tr>
+<tr><td><em>file buttons</em></td>
+    <td>Shows the buttons to load score and media. Also shows the &quot;<em>use dropbox</em>&quot; checkbox</td></tr>
+<tr><td><em>no cursor</em></td>
+    <td>Hides the cursor when playing and shows the cursor when paused.</td></tr>
+<tr><td><a name="lncsr"></a><em>line cursor</em></td>
+    <td>Displays a line cursor in the score in stead of the blue measure shading.</td></tr>
+<tr><td><em>center player</em></td>
+    <td>When set the player is centered on the page. When not set the player together with the speedbuttons are centered</td></tr>
+<tr><td><em>center score</em></td>
+    <td>Centers the score on the page. When not set the score is left aligned.</td></tr>
+<tr><td><em>hide player</em></td>
+    <td>Hides the media player and resizes the height of the button area to zero. (score aligns to top of page)</td></tr>
+<tr><td><em>autoscale</em></td>
+    <td>Resizes the score to the width of the browser page</td></tr>
+<tr><td><em>skip&nbsp;repeats</em>
+    <td>Skips playing repeated sections. Is only effective when enabled <em>before</em> loading a score or <a href="#preload">preload file</a>.
+    Has no effect after loading.
+    </td></tr>
+<tr><td><em>count in</em></td>
+    <td>Displays a count down before starting playback. The tempo of the count-in is the average of the tempo in
+    the next three measures. Takes speed setting into account. The current meter determines the number of beats that is counted down.</td></tr>
+<tr><td><em>metronome</em></td>
+    <td>Displays a beat number count-down while playing. The beat tempo is that of the current measure,
+    taking speed control into account.</td></tr>
+<tr><td><em>help</em></td>
+    <td>Shows a panel with help info. The panel is hidden when the mouse leaves the panel area</td></tr>
+</table>
+Two settings can only be changed by manually editing a <a href="#preload">preload file</a>:
+<table class="indent tab">
+<tr><td><em>msc_credits</em></td>
+    <td>The contents of <em>msc_credits</em> will be displayed next to, and to the right of, the media player.
+    The setting is made by adding the following string assignment to the preload file:
+    <pre>    msc_credits = "any html formatted credit text goes here"</pre></td></tr>
+<tr><td><em>opacity</em></td>
+    <td>Sets the opacity of the measure shading (0.0 is no shading, default: 0.2, solid color is 1.0).
+    This setting is in the line that looks like:
+    <pre>    opt = {"jump":0, ..., "opacity":0.2, ...,"btns":0};</pre></td></tr>
+</table>
+
+<a name="sync"></a>
+<h3>Synchronization</h3>
+To synchronize a live performance to the score you have to mark the <a href="#synbx"><em>enable sync</em></a> checkbox. A special area
+becomes visible which shows some information related to synchronization:
+<a name="synpn"></a>
+<table class="indent tab">
+<tr><td><a name="mdur"></a><em>duration measure</em></td>
+    <td>The time in seconds that the measure stays shaded (or the time that it takes for the line cursor to traverse the measure).
+    </td></tr>
+<tr><td><a name="offset"></a><em>media offset</em></td>
+    <td>The time in seconds from the moment that the media starts playing until the cursor/shading starts moving. Some media files do
+    not start at the point where the score starts. This time accounts for the difference. A positive offset means that the media
+    starts earlier than the the score (which is the most common situation). A negative offset means that the score cursor starts
+    before the media.
+    </td></tr>
+<tr><td><a name="woff"></a><em>wait offset</em></td>
+    <td>With this option checked the media starts playing but the cursor (and score) are halted. A click in the first measure then 
+    unchecks this option and the cursor starts moving again (starting at the first measure) to allow further synchronization.
+    </td></tr>
+<tr><td><a name="jump"></a><em>jump</em></td>
+    <td>When the jump box is checked, and you click in a measure, play back jumps back one measure to let you review the timing
+    accuracy of your click (or rather the browser latency). Because this happens at each click, it is turned off by default.
+    </td></tr>
+<tr><td><a name="import"></a><em>import</em></td>
+    <td>Imports timing data from another <a href="#preload">preload file</a>. When separate parts of the same score have to be
+    synchronized, one only has to synchronize one part and import that data into the other parts. This not only saves
+    work but is essential when these parts have to play <a href="#wsok">synchronized in multiple devices</a>.
+    </td></tr>
+<tr><td><a name="save"></a><em>save</em></td>
+    <td>Saves score, settings and synchronization data to a file, called the <a href="#preload">preload file</a>.
+    </td></tr>
+<tr><td><a name="scrm"></a><em>scramble</em></td>
+    <td>The score data in the preload file will be scrambled. When such a scrambled preload file is loaded, <em>abcweb</em> disables
+    the main menu, the context menu and drag/drop. This makes it more difficult for a user to retrieve the ABC score data.
+    </td></tr>
+</table>
+You can follow two methods, while you can switch between both methods at any time. The first method is probably the easiest
+but not the most accurate:
+<div style="margin-left: 30px; margin-bottom: 5px; margin-top: 5px;">- <i>clicking while playing</i></div>
+You turn on play back and click in a measure as soon as you hear the first beat of that measure.
+By clicking in a measure you synchronize the *first* beat of that measure to the audio. You do not need to click in
+every measure, because, as soon as you click, the program calculates the current tempo and assumes the music keeps
+playing with that tempo. So you only need to click in a measure when the deviation between the score cursor and the
+audio becomes too large.<br>
+Clicking in the first measure synchronizes the first beat (of the music) to (the first note) in the media file. This
+sets the, so called, <a href="#offset">offset of the media file</a>. When the score belongs to a fragment that starts late in the
+media file, one does not want the cursor moving before playback arrives at the fragment.
+With option <a href="#woff"><em>wait offset</em></a> checked you can start playback while the cursor and score stay halted. When
+play back arives at the position of the first measure, a click in that measure unchecks this option and the cursor starts moving
+to allow further synchronization.
+<br>
+When the <a href="#jump"><em>jump box</em></a> is checked (above the save button), playback jumps one measure backwards at every
+synchronization click. The idea is that you can review how well your click was timed.
+<div style="margin-left: 30px; margin-bottom: 5px; margin-top: 5px;">- <i>using keys while paused</i></div>
+Although you can easily synchronize playback by just clicking in a measure at the right time, a more precise result
+can be obtained when using the keyboard short cuts. Proceed as follows:
+<ol>
+<li>Make sure your score has at least one tempo marking (at the beginning) with approximately the right tempo of the
+live performance. You will then start off with at least an approximately synchronized score.</li>
+<li>Stop play back (p). Switch on the <a href="#lncsr">line cursor</a> (l).<br>
+Go back to the first measure ([) and look at the <a href="#offset">offset time</a> (it will be zero in the beginning).
+Use the keys <em>control-<b>.</b></em> and <em>control-<b>,</b></em> to increase or decrease this offset time by 0.1 sec per keystroke.
+Adjust the offset until the music starts at the same time as the line cursor starts moving. The offset can assume (large)
+negative values when the music starts late in the media file.
+</li>
+<li>Go to the first measure (with play back halted!) where you find that the cursor deviates too much from the music. Use
+the keys <b>.</b> or <b>,</b> to increase or decrease the <a href="#mdur"><em>measure duration</em></a>. When the cursor is too
+late in the measure you have to decrease the duration. You may also want to decrease the measure before the one where you find
+the deviation too much. When the cursor is too far ahead relative to the music (too fast) you should increase the duration of
+the measure.</li>
+<li>Frequently stop playback (p), navigate a couple of measures backwards ([), and restart playback (p) to judge synchronization.
+Using the line cursor is probably better for this purpose than measure shading.</li>
+<li>When all measures are synchronized you can save the results (w or <a href="#save">save button</a>) to a preload file. The preload file
+can have any name, but should end with &quot;.js&quot; as it is a regular javascript file.</li>
+</ol>
+
+<a name="preload"></a>
+<h3>Saving and using a preload file</h3>
+<em>abcweb</em> can preload score data, media file, synchronization data and several settings from a special javascript file.
+Such a &quot;<em>preload file</em>&quot; is made by pressing the <a href="#save">save button</a> in <em>abcweb</em>
+(visible when the <a href="#synbx">synchronisation option</a> is checked).<br>
+To use a preload file you can either load it like a score file with the <em>score file</em> button
+or you can add the name of the preload file as a parameter in the URL that starts <em>abcweb</em>.<br>
+For example, when you use a webserver:<br>
+<pre>
+    http://your.domain/abcweb.html?preload_file.js
+</pre>
+or when the preload is on dropbox (explanation <a href="#dropbox">below</a>):
+<pre>
+    http://wim.vree.org/js/abcweb.html?d:z5swu2kum6vorxv/preload_file.js
+</pre>
+or when opening <em>abcweb</em> as a local file:
+<pre>
+    file:///path/to/abcweb.html?preload_file.js
+</pre>
+The latter example assumes that the preload file is in the same directory as <em>abcweb.html</em>. When it is in 
+another location, the relative path to the preload file should be given.
+As an example, suppose the following directory layout:
+<pre>
+    /root
+    /score/abcweb.html
+          /media/example.mp3
+          /preload/example.js
+</pre>
+Then <em>abcweb.html</em> can be opened in the browser using the following (local file) URL: 
+<pre>
+    file:///score/abcweb.html?../preload/example.js
+</pre>
+The preload file is a regular javascript file. It only contains a couple of assignments. The first assignment sets the
+media file to load. When <em>example.js</em> is freshly saved using <em>abcweb</em> it will look as follows:
+<pre>
+    media_file = "example.mp3";
+</pre>
+Note that only a file name is specified and no path. Due to security restrictions in the
+browser, <em>abcweb</em> cannot save the correct path. This means that you have to <b>add the path manually</b> into
+<em>example.js</em>. With the example directory tree from above, the first assignment should read:
+<pre>
+    media_file = "../media/example.mp3";
+</pre>
+
+<a name="dropbox"></a>
+<h3>Preload files with Dropbox</h3>
+When saving with dropbox a preload file is created which already contains the correct shared link to the media
+file. No manual changes are necessary. The preload file is used by specifying the shared link to the preload file
+as URL parameter. For example:
+<pre>
+    http://wim.vree.org/js/abcweb.html?https://dl.dropboxusercontent.com/s/kb5d2uyletj4exh/gadma_2.js
+</pre>
+This example loads abcweb from its website and loads the preload file <em>gadma_2.js</em> from the user's dropbox.
+However, when you obtain a shared link from dropbox it has a different form, like:
+<pre>
+    https://www.dropbox.com/s/kb5d2uyletj4exh/gadma_2.js?dl=0
+</pre>
+Unfortunalely the link in this form cannot be used for <em>abcweb</em>. You have to extract the 15 character long code
+string (&quot;<em>kb5d2uyletj4exh</em>&quot; in the example above) and the file name. The URL parameter you have
+to use for <em>abcweb</em> then becomes &quot;<em>d:code_string/file_name</em>&quot;. Thus the example above becomes:
+<pre>
+    <a href= "http://wim.vree.org/js/abcweb.html?d:kb5d2uyletj4exh/gadma_2.js">http://wim.vree.org/js/abcweb.html?d:kb5d2uyletj4exh/gadma_2.js</a>
+</pre>
+The string &quot;d:&quot; at the beginning of the preload parameter is expanded internally by <em>abcweb</em>
+to &quot;https://dl.dropboxusercontent.com/s/&quot;. This saves you some typing.
+<br>
+<span style="border: thin black dotted; padding-left:0.2em; padding-right:0.2em; background: #eee; line-height: 1.5;">
+A preload file on DropBox must always have extension <b>.js</b> otherwise it will not load.</span><br>
+
+<a name="nonet"></a>
+<h3 style="display:inline-block">Operation without internet connection</h3><br>
+When you want to run <em>abcweb</em> on a computer <em>without</em> internet connection you just open the file
+<em>abcweb.html</em> in the browser.
+You have to put four extra javascript files (that are normally loaded from the internet) into the same
+directory as <em>abcweb.html</em>:
+<pre>
+    jquery-1.11.0.min.js
+    abc2svg-1.js
+    abc2web.js
+    xml2abc.js
+</pre>
+All files are included in <a href="abcweb_40.zip">abcweb_40.zip</a>.
+
+<h3><a name="params"></a>Extra parameters in the URL</h3>
+Abcweb.html recognizes several extra parameters in the URL:
+<table class="indent tab">
+<tr><td><em>file name</em></td>
+    <td>When you use a  <em>file_name</em> as parameter in the URL, the file extension determines its intended
+    use, i.e. media files should end with .ogg, .mp3, .webm or .mp4 and score files should end
+    with .xml or .abc, filnally preload files should end with .js.
+For example, when using dropbox:
+<pre>
+    http://wim.vree.org/js/abcweb.html?d:dropbox_id1/scorefile.xml&amp;d:dropbox_id2/mediafile.webm
+</pre>
+or with your own webserver:
+<pre>
+    http://your.domain/abcweb.html?relative_path/to/scorefile.xml&amp;relative_path/to/mediafile.webm
+</pre>
+    The first example uses abcweb from the standard location and loads the other files from your dropbox.<br>
+    In the second example both score file and media file are located on <em>your.domain</em>, the same domain from where
+    <em>abcweb.html</em> is opened. This causes <em>abcweb</em> to preload the score file and the media file from the
+    server.</td></tr>
+<tr><td><em>med=</em></td>
+    <td>To use a youtube identifier as URL parameter you need to specify <em>med=youtube_id</em>. For instance:
+<pre>
+    http://wim.vree.org/js/abcweb.html?d:dropbox_id/scorefile.xml&amp;med=youtube_id
+</pre>
+    loads the youtube player with the identified video and gets the score from dropbox.
+    </td></tr>
+<tr><td><a name="ip"></a><em>ip=</em></td><td>With the <em>ip=ip_number</em> parameter you specify the ip number of a WebSocket
+    server on your local network. All instances of abcweb that are started with the same <em>ip=ip_number</em> parameter are
+    playing synchronized with each other. This is useful to get a group of computers/tablets play the same score at
+    precisely the same time. Each instance can start/stop playing and all others follow. Same for jumping to a different measure.
+    See <a href="#wsok"> Web Sockets</a> for more details on how the run the server.
+    </td></tr>
+<tr><td><a name="mstr"></a><em>mstr</em></td>
+    <td>The master parameter <em>mstr</em> makes one device the master of a group of synchronized devices. Only
+    the master device can issue play/pause commands and position the playback. All other devices follow the master but
+    cannot play/pause or jump to another measure.</td></tr>
+<tr><td><em>nomed</em></td>
+    <td>Skips the loading of the media and aligns the score with the top of the page. On a synchronized device
+    this option shows the score and the synchronized cursor, but does not load or play the media file.</td></tr>
+<tr><td><em>dx.x</em></td>
+    <td>Inserts an initial latency of 0.xx seconds for all commands received on a synchronized device. This is useful if some
+    devices of a synchronized group are much slower than others. For example, the simulated default player is much faster than the
+    youtube player. A latency of 0.3 seconds is no exception, which can be compensated by adding d3 as paramter:
+    <pre>
+    http://.../abcweb.html?preload&amp;med=youtube_id&amp;ip=192.168.xx.xx&amp;mstr (master with slow youtube player)
+    http://.../abcweb.html?preload&amp;ip=192.168.xx.xx&amp;nomed&amp;d3            (fast slaves with delay of 0.3 sec)
+    </pre>
+    </td></tr>
+<tr><td><em>nb</em></td>
+    <td>Hides the menu. The user cannot change anything. Of course it also prevents saving. To make this setting permanent
+    in a preload file, you have to edit the preload file manually with a text editor. The setting is called <em>no_menu</em>
+    and should be set to 1 to hide the menu:
+    <pre>    opt = {"jump":0,"no_menu":1,"nospd":true, ...</pre>
+    Note: a scrambled preload file implies this option.</td></tr>
+<tr><td><em>tmr=n</em></td>
+    <td>Sets the margin between the top of current music line and the bottom of the player to <em>n</em> pixels
+    (default 0, which displays the current music line precisely adjacent to the player). This setting is saved
+    in the preload file.</td></tr>
+</table>
+<div style="margin-top:5px; margin-bottom:5px;"><em>Notes:</em></div>
+<li class="indent">The parameter <em>nb</em> is only interpreted when also a <em>preload file</em> or a <em>score file</em>
+is present in the URL.</li>
+<li class="indent">In stead of specifying a score and media <em>file name</em> parameter in the URL one can also (and better)
+use a preload file. But when granting access to a large collection of score files on a server, it may be preferable
+not to have to provide an extra preload file for every score/media file.
+<br>
+The advantage of using a preload file is that it also provides synchronization data and other preferences.</li>
+<li class="indent">You can <em>not</em> use score and media <em>file name</em> parameters in the URL when abcweb is started
+from the local file system on your pc (double click abcweb.html). A preload file, on the other hand, can <em>always</em> be used.
+Even when abcweb.html is opened from the local file system.</li>
+
+<h3><a name="wsok"></a>Multiple devices running abcweb synchronized (with Web Sockets)</h3>
+When you have a group of tablets/phones/computers playing abcweb, it is possible to have these devices
+precisely synchronized. When one device starts playing all other devices start as well. When one device jumps to a different measure
+all devices jump at the same time. Hereby it is possible to have only one master who is able to perform play, pause or jump or
+to have a symmetrical situation where each device can issue these commands. Also it is possible to have only one device with both score
+and media files loaded while all other devices only have score and no media. The media-less devices still move the cursor synchronized
+with all others through the score.
+<br>All this requires one extra parameter in the URL: <a href="#ip"><em>ip=ip_number</em></a>. It needs to be typed on each device
+to be synchronized. The <em>ip_number</em> in this parameter is the address of a computer/tablet/phone
+running the javascript program <em>abcSrv.js</em> (see <a href="#server">running abcSrv.js</a>). This program preforms the role of
+director for the group of synchronized devices. It receives a play/pause/jump command from one member of the group and (re)issues
+the command to all members of the group.
+<br>
+A group of devices synchronized with the <a href="#ip"><em>ip=ip_number</em></a> parameter, behaves in a symmetrical fashion. Every device
+in the group can initiate a play/pause command, or jump to a different measure.
+<div style="border: thin black dotted; padding-left:0.2em; padding-right:0.2em; background: #eee; line-height: 1.5;">
+To start/stop playback for a group of devices you have to use the P-key or click somewhere in the margin. Using the play-button of the
+media player will <b>not</b> issue synchronized commands; only the P-key or a click in the margin can start multiple devices in sync.
+</div>
+One extra parameter: <a href="#mstr">&quot;<em>mstr</em>&quot;</a> makes
+the device where this parameter is present the master of the group, disabling all others from issuing play/pause or jump commands. Only
+the master can now initiate play/pause of jump. For example:
+<pre class="indent">
+http://wim.vree.org/js/abcweb.html?some_preload.js&amp;ip=192.168.178.xx      (for all slave devices)
+http://wim.vree.org/js/abcweb.html?some_preload.js&amp;ip=192.168.178.xx&amp;mstr (for the master device)
+</pre>
+while the device with ip number 192.168.178.xx has to run <a href="#server"><em>abcSrv.js</em></a>
+<br>To run locally one would use:
+<pre class="indent">
+http://192.168.178.xx:8090/abcweb.html?some_preload.js&amp;ip=host      (for all slave devices)
+http://192.168.178.xx:8090/abcweb.html?some_preload.js&amp;ip=host&amp;mstr (for the master device)
+</pre>
+This works while <em>abcSrv.js</em> not only synchronizes the devices but also acts as a normal web server (on port 8090).
+In this case one needs all <a href="#nonet">abcweb files</a> to be present in the same directory where abcSrv.js is located.
+Also <em>some_preload.js</em> and its corresponding media file have to be there.
+This is because <em>abcSrv.js</em> uses its own directory as root directory for the http server it implements.
+<br>Note the specal abbreviation <em>ip=host</em>. This short form of the <a href="#ip"><em>ip=</em> ip_number</a> can only be used when the
+real ip number of the web socket server is already present (as host address) in the URL.
+<br>When you want the slave devices without media player you have to add the parameter "nomed" in the URL. For example:
+<pre class="indent">
+http://192.168.178.xx:8090/abcweb.html?some_preload.js&amp;ip=host&amp;nomed (for all slave devices)
+http://192.168.178.xx:8090/abcweb.html?some_preload.js&amp;ip=host&amp;mstr  (for the master device)
+</pre>
+This example is for a class room where only the master is connected to loudspeakers and the slaves are mute and only follow the score.
+<br>
+When a device succesfully connects to abcSrv.js (the WebSocket server) the menu button becomes green. For the master device the
+menu button becomes red. This gives some feedback to indicate that henceforth all play/pause/jump actions will be issued by abcSrv.js
+as the director of the group.
+
+<h3><a name="server"></a>Running abcSrv.js</h3>
+<em>AbcSrv.js</em> is included in: <a href="abcweb_40.zip">abcweb_40.zip</a>. It is a javascript program
+that implements a simple http server and a special Web Socket server. The normal http server runs on port 8090 and the web socket server
+on port 8091. <em>Abcweb</em> expects the web socket server to be on port 8091.
+<br> To run <em>abcSrv.js</em> you need to have <a href="http://nodejs.org/"><em>Node</em></a> installed. <em>Node</em> is a javascript
+engine with unrestricted access to many underlying computer capabilities. Browsers can run javascript too, but they hide these capabilities
+almost completely (sandbox) and are of no use to implements servers.
+<br>When you have <em>Node</em> installed you can start abcSrv.js with a command like:
+<pre class="indent">
+# nodejs abcSrv.js
+</pre>
+When started it prints the following output on the console:
+<pre class="indent">
+websocket server listening on port: 8091, address: 192.168.178.xx
+http server listening in port: 8090, adress: 192.168.178.xx
+web server root directory: /path/to/where/abcSrv.js/is/located/
+</pre>
+On a normal (i.e. not jailbroken) iPad, <em>abcSrv.js</em> has been tested using the app Touch Code Pro from iTunes. This app can load
+and run <em>abcSrv.js</em>, which turns the iPad into a simple http server and websocket server, so you can not only synchonize a group of other
+tablets but also serve the score an media locally, without connecting to the internet (see <a href="#nonet">running abcweb.html locally</a>).
+</body></html>

@@ -1,0 +1,193 @@
+version 40
+- bug with loopmarkers when reading syncrhonization data from another preload file.
+- adaptation to internal changes in abc2svg: svg viewBox removed, svg scaling removed,
+  object member "tempo_value" renamed to "tempo".
+- some note heads replaced by unicode symbols (in perc2map) because their internal svg definitions were
+  removed from abc2svg.
+- better code for the computation of the scaling factor from svg to screen coors
+
+version 39
+- video size can now be changed by dragging in the empty space beside the video. Previously one had to
+  drag a narrow resize bar which was difficult to do on a tablet. 
+- performance of video resizing improved.
+- replaced hover behaviour of menu with click behaviour (better for tablets)
+- mouseleave behaviour of the help area replaced by click beside behaviour (better for tablets)
+
+version 38
+- removed the separate on-screen loop checkbox. Its function is now (more logically) implied by the loop menu item.
+- metronome was not cleared when disabled (== menu item unselected) during playback.
+- loopmarks are saved/restored in/by the preload file
+
+version 37
+- autoscale once when opening a preload with a scorewidth larger than the screen size of the device
+- prefer XMLHttpRequest for a preload and only fall back to dynamic script tag when a cross domain violation occurs
+- do not position youtube player when video is cued; also skip explicit pause when cued.
+
+version 36
+- youtube player would not load when the browser's flash plugin was enabled.
+
+version 35
+- normal repeats implemented (with first and second endings).
+- deleted the "unfold repeats" option and added a "skip repeats" option.
+- separate menu items for loop and speed buttons.
+- metronome implemented
+
+version 34
+- when marking the import checkbox show file buttons when hidden
+- when youtube player has loaded switch on the youtube input field
+- when saving do not save the enable sync option
+- prevent propagation of keybord events from the youtube-id input field, because shortcuts would be triggered
+- replace C and C| by 4 resp. 2 in beat analysis of ABC code.
+- setScale crashed when SVG picture had no viewbox
+- delay parameter not properly parsed in URL
+- count-in takes speed, meter and tempo changes in account.
+- dummy player takes speed and tempo changes in account.
+- avoid exception with self constructed key event
+
+version 33
+- added a count-in, enabled by a checkbox, number of counts derived from the time signature, tempo is the average of measure 2-4.
+- setting of loop markers now also works correctly when measure shading is active.
+- correction for small differences in synchronization data when measure shading is active and multiple devices are synchronized.
+- added checkbox to enable import of timing data from another preload. (useful for making preloads of multiple score parts
+  with the same timing)
+- corrected bug when loading different video after loading a youtube video
+- key-m toggles menu, key-f: file buttons, key-s: speed/loop controls, key-a: auto-scale
+
+version 32
+new features:
+- synchronized start/stop/goto of multiple devices running abcweb (needs a Web Socket server, see below). All devices
+  play the score and media precisely synchronized. The url parameter "ip=ip-number" enables this mode, where
+  ip-number is the address of the Web Socket server.
+- a simmulated default player allows devices without media (only score) to keep in sync with devices with media.
+- one device can assume the role of a master (otherwise any device can play/pause/goto). The url parameter "mstr"
+  enables this mode for a synchronized device.
+- added file "abcSrv.js" This program must be run with Node (http://nodejs.org/) and implements a Web Socket server
+  (on port 8091) with the synchronization protocol for abcweb. It also has a normal http server (port 8090) for using
+  abcweb in a local network without internet connection.
+- in a url parameter "d:" is expanded to "https://www.dropbox.com/s/"
+- url parameter "nomed" disables loading of media files (to allow a normal preload to play without media on synchronized
+  devices). It also aligns the score with the top of the page.
+- url parameter "dx.x" adds a latency of 0.xx seconds to the media player when playing. When synchronizing multiple devices
+  this allows fast devices to compensate for the longer latency on a slower devices.
+improvements:
+- with measure shading, play back always jumps to the start of the measure when clicked, independent of where the click
+  occurs in the measure. In line cursor mode, play back and cursor are positioned precisely at the place of the click.
+- the html5 media player now jumps to the offset before starting. Previously it would start at the beginning even if
+  a large offset was defined in the preload.
+- the option to hide the cursor now works with all players (html5, youtube and simulated) and also works while playing
+  (previously it did not work for the youtube player at all, and would only take effect after a pause/play).
+
+version 31:
+- the med=file_name URL parameter now also accepts a youtube video id.
+- added URL parameter tb=n to specify a start time of the media in seconds (float)
+- added URL parameter te=n to specify an end time of the media in seconds (float). In combination with tb=n this allows
+  a coarse synchronization of the whole score.
+- playback pauses at end of score
+
+version 30:
+- added an option to use the youtube iframe-player.
+- added text field to specify a youtube video id (when youtube player selected).
+- extended program for use of the youtube api (synchronization, load/save mechanism, speed change etc.).
+- added option "wait offset" (when synchronizing wait for a click in the first measure before starting cursor movement)
+
+version 29:
+- all options moved into a single menu
+- all options are now accessible from the menu (previously some options were only settable via a url parameter)
+- all options are saved to and loaded from the preload file (including speed, video height and top margin)
+- new options: center score, center media
+- changed default options jump=0 and top-margin=0 (was jump=1 and top_margin=50)
+- changed URI parameter "nj" into "jmp", setting option jump=1 as the default now is 0.
+- bug recognizing the + key shortcut for increasing speed, also added Num+ and Num- shortcuts for in/decreasing speed
+
+version 28:
+- retain state of the loop markers when the loop checkbox is toggled
+- new checkbox and corresponding URI-parameter "ncr" to hide the cursor while playing
+- hide interface while loading score/media (during preload)
+- URI parameter "tmr=nn" to set the top margin (current music line to bottom player) to nn pixels
+- URI parameter "asc" to set autoscale active.
+- check that end marker comes after start marker when setting a loop
+- wrong file type detected when checking video file opened from dropbox
+- wrong file name saved in preload file when local media file was used
+- added webit specific css for the score area that disables tap-and-hold selection
+- removed dynamic loading of javascript as it caused problems on the iPad.
+
+version 27:
+- new URI-parameters "npl" and "ur". (npl = no player visible, ur = unfold simple repeats)
+- clicking left of the first bar on a line (or right of the last bar on a line) pauses/resumes the player
+
+version 26:
+- bug with left barline at the start of a staff (previously left repeat caused extra measure)
+- wrong default tempo when no explicit tempo in score
+
+version 25:
+- the score file button can also open and process preload files
+- dropbox support: load and save can use the dropbox Chooser and Saver, which loads and saves directly on a users
+  account on dropbox.com (also works on iPad)
+- preload files can be shared from dropbox and enable users to present video synchronized to score on the web.
+- when a preload file is saved on dropbox, the corresponding media file (on dropbox) is automatically found.
+- checkbox (and corresponding url parameter) added to hide speed and loop buttons
+
+version 24:
+- loop feature added (loop checkbox visible when line cursor mode checked)
+- main html file suitable for use in dropbox public folder (e.g. for use with iPad)
+- dynamic javascript loading: first local files are tried and when that fails resources are loaded from internet.
+- disabled zooming on iPad
+- new url paramters 'syn' and 'nj'
+  e.g. in abcweb.html?...&syn&nj where syn marks the 'sync' checkbox and 'nj' clears the jump sync box
+
+version 23:
+- translation I:percmap -> %%map for percussion (code is in abcweb.js and only works for the kind of abc that is output by xml2abc)
+- added note shapes: triangle(+), diamond(+), rectangle(+), x, circle-x
+- speed slider replaced by two buttons (plus 0.01, minus 0.01) for better usability on tablets
+- changed the behaviour of the buttons checkbox. When this checkbox is cleared the state of the sync checkbox remains
+  unchanged. Previously it was also cleared.
+- added handling of touch events for the video resize bar.
+- added option no_jump = 1 for the preload file. When true clears the jump checkbox during preload.
+- added option msc_sync = 1 for the preload file. When true marks the sync checkbox during preload.
+- options no_jump and msc_sync can also be set by url parameters nj and syn: abcweb.html?syn&nj
+- when windows.load event fired multiple times several preload variables got wrong values
+
+version 22:
+- first changes for single lineair time sequence in stead of a line/measure oriented 2-dim time array.
+- query parameter xml= works again. Was broken by changes in version 19.
+
+version 21:
+- branch intf_1 merged with trunk.
+- branch intf_1 supports abc2svg-1.js and uses its abc parse tree (get_abcmodel).
+
+version 20:
+- added checkbox to disable the backwards jump of one measure while synchronizing
+
+version 19:
+- check encoding given in the xml header and if not utf reread file with specified encoding
+
+version 18:
+- added a slider that can change playback speed (audio/video) in the range from 0.5 to 2.0
+  (Contributed by Stef Dave)
+
+version 17:
+- added query parameters (xml= and med=) for an xml file and media file:
+  http://.../abcweb.html?xml=xml_file_name&med=media_file_name
+  The xml= parameter may also specify an ABC file.
+
+version 16:
+- bug corrected in calculation of measure duration when tuplets contains chords.
+
+version 15:
+- media area height can be resized (hover at top of score area -> resize bar visible and can be dragged).
+- added variables for presetting the video height and the measure shading opacity.
+- how to use these variables in the preload file is described in readme.html.
+
+version 14:
+- added abc parser to compute note durations. Allows tempo changes (Q:) at arbitrary positions in a measure.
+- deleted the restrictions on Q: and M: from the help text, because there are no more such restrictions.
+
+version 13:
+- display credits next to media, centered on the page.
+- credit html read from preload file as array of strings.
+
+version 12:
+- reorder the external times_arr to the internal wz_times. Corrects old preload file for layout changes.
+
+version 11:
+- initial release
