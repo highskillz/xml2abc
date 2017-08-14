@@ -1,0 +1,324 @@
+<!DOCTYPE HTML>
+<html class="rat"><head>
+<meta charset="utf-8">
+<script src="jquery-1.11.1.min.js"></script>
+<script src="xml2abc.js"></script>
+<script src="abc2svg-1.js"></script>
+<script>
+var muziek = '';
+var xmlFileName = '';
+var abcText = '';
+var dlgOpen = 0;
+var xml_options = { p:'f' };
+var drop_files = null;
+
+function perc2map (abcIn) {
+    var b = '%%beginsvg\n<defs>\n'
+    b+= '<text id="x" x="-3" y="0">&#xe263;</text>\n'
+    b+= '<text id="normal" x="-3.7" y="0">&#xe0a4;</text>\n'
+    b+= '<g id="circle-x"><text x="-3" y="0">&#xe263;</text><circle r="4" class="stroke"/></g>\n'
+    b+= '<path id="triangle" d="m-4 -3.2l4 6.4 4 -6.4z" class="stroke" style="stroke-width:1.4"/>\n'
+    b+= '<path id="triangle+" d="m-4 -3.2l4 6.4 4 -6.4z" class="stroke" style="fill:#000"/>\n'
+    b+= '<path id="rectangle" d="m-3.5 3l0 -6.2 7.2 0 0 6.2z" class="stroke" style="stroke-width:1.4"/>\n'
+    b+= '<path id="rectangle+" d="m-3.5 3l0 -6.2 7.2 0 0 6.2z" class="stroke" style="fill:#000"/>\n'
+    b+= '<path id="diamond" d="m0 -3l4.2 3.2 -4.2 3.2 -4.2 -3.2z" class="stroke" style="stroke-width:1.4"/>\n'
+    b+= '<path id="diamond+" d="m0 -3l4.2 3.2 -4.2 3.2 -4.2 -3.2z" class="stroke" style="fill:#000"/>\n'
+    b+= '</defs>\n%%endsvg'
+    var fillmap = {'diamond':1, 'triangle':1, 'rectangle':1};
+    var abc = [b], ls, i, x, r, id='default', maps = {'default':[]};
+    ls = abcIn.split ('\n');
+    for (i = 0; i < ls.length; ++i) {
+        x = ls [i];
+        if (x.indexOf ('I:percmap') >= 0) {
+            x = x.split (' ');
+            var kop = x[4];
+            if (kop in fillmap) kop = kop + '+' + ',' + kop;
+            x = '%%map perc'+id+ ' ' +x[1]+' print=' +x[2]+ ' midi=' +x[3]+ ' heads=' + kop;
+            maps [id].push (x);
+        }
+        if (x.indexOf ('V:') >= 0) {
+            r = x.match (/V:\s*(\S+)/);
+            if (r) {
+                id = r[1];
+                if (!(id in maps)) maps [id] = [];
+            }
+        }
+    }
+    for (id in maps) abc = abc.concat (maps [id]);
+    for (i = 0; i < ls.length; ++i) {
+        x = ls [i];
+        if (x.indexOf ('I:percmap') >= 0) continue;
+        if (x.indexOf ('V:') >= 0 || x.indexOf ('K:') >= 0) {
+            r = x.match (/V:\s*(\S+)/);
+            if (r) id = r[1];
+            if (maps [id].length == 0) id = 'default';
+            abc.push (x);
+            if (x.indexOf ('perc') >= 0 && x.indexOf ('map=') == -1) x += ' map=perc';
+            if (x.indexOf ('map=perc') >= 0 && maps [id].length > 0) abc.push ('%%voicemap perc' + id);
+            if (x.indexOf ('map=off') >= 0) abc.push ('%%voicemap');
+        }
+        else abc.push (x);
+    }
+    return abc.join ('\n');
+}
+
+function loadXml (data) {
+    var xmldata = $.parseXML (data);
+    var res = vertaal (xmldata, xml_options);
+    var errtxt = res[1]; abcText = res[0];
+    if (errtxt) errtxt += '\n';
+    $('#abc').text (abcText);
+    $('#err').text (errtxt);
+    $('#savebtn').attr ('disabled', false);
+    if (abcText.indexOf ('percmap') >= 0) { // translate again with option t==1
+        xml_options ['t'] = 1;  // t==1 -> clef determines step value on staff
+        res = vertaal (xmldata, xml_options);
+    }
+    dolayout (res[0]);
+}
+
+function readEnc (data) {
+    var xs = data.slice (0, 100);   // only look at the beginning of the file
+    if (xs.indexOf ('<?xml') == -1) { alert ('not an xml file'); return; }
+    var enc = xs.match (/encoding="([^"]+)"/);
+    enc = enc && enc.length == 2 ? enc [1] : 'utf-8'; // extract given encoding and fall back to utf-8
+    if (/utf/i.test (enc)) loadXml (data);    // proceed when utf-8
+    else readFile (loadXml, enc);   // read again when not utf encoded
+}
+
+function readFile (doRes, enc) {
+    var file;
+    if (drop_files) file = drop_files [0]
+    else            file = $('#fileinput').prop ('files')[0];
+    if (!file) return
+    var freader = new FileReader ();
+    freader.onload = function (e) { doRes (freader.result); }
+    xmlFileName = file.name;
+    freader.readAsText (file, enc);
+}
+
+function doDrop (e) {
+    e.stopPropagation ();
+    e.preventDefault ();
+    drop_files = e.dataTransfer.files;
+    $(this).toggleClass ('indrag', false);
+    readFile (readEnc, '');
+}
+
+function dolayout (abctxt) {
+    function svg_out (str) {
+        var w = str.match (/width="(\d*)px"\s*height="(\d*)px"/);
+        if (w) str = str.replace ('>', ' viewBox="0 0 ' + w[1] +' '+ w[2] + '">');
+        muziek += str;
+    }
+    var abc2svg;
+    muziek = '';
+    var errtxt = '';
+    $('#notation').html (muziek);
+    if (abctxt.indexOf ('percmap') >= 0) abctxt = perc2map (abctxt);
+    var user = {
+        'img_out': svg_out,
+        'errmsg': function errmsg (txt) { errtxt += txt + '\n' },
+        'read_file': function (x) { return ''; },   // %%abc-include, unused
+        'page_format': true // define the non-page-breakable blocks
+    }
+    abc2svg = new Abc (user);
+    abc2svg.tosvg ('abc2svg', abctxt);
+    if (errtxt.replace (/\s/g,'') == '') errtxt = 'no error';
+    $('#err').append (errtxt);
+    if (muziek) $('#notation').html (muziek);
+}
+
+function saveABC () {
+    var a, fnm, of, res = abcText;
+    fnm = xmlFileName.replace (/\.xml/i, '.abc');
+    try {
+        a = document.createElement ('a');   // don't bother to use jquery
+        a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent (res);
+        a.download = fnm;
+        a.text = "Save ABC file"
+        $('#saveDiv').append (a); // append to a dummy invisible div
+        a.click (); // only seems to work if a is appended somewhere in the body
+    } catch (err) {
+        if (!confirm ('Do you want to save the ABC text?')) return;
+        document.open ("text/html");    // clears the whole document and opens a new one
+        document.write ('<pre>' + res + '</pre>');
+        document.close ();
+    }
+}
+
+function selectFmt () {
+    var k = 0;
+    var fxs = $('#fmtdiv input');
+    fxs.each (function (i, e) { if (e.checkValidity ()) k += 1; });
+    if (k != fxs.length) {  // page format control invalid
+        $('[type="radio"][value="2"]').prop ('checked', true);
+        return;             // keep specify button on
+    }
+    var v = $(this).val();
+    switch (v) {
+    case '2': $('#fmtdiv').slideDown (); break;
+    case '1': $('#fmtdiv').slideUp (); v = ''; break;
+    case '0': $('#fmtdiv').slideUp (); v = 'f'; break;
+    }
+    xml_options.p = v;
+}
+
+function setOptions () {
+    if ($('#opttxt')[0].checkValidity ()) {
+        hideDlg ('#opttxt');
+        xml_options.u = $('#unfld').prop ('checked') ? 1 : 0;
+        xml_options.b = parseInt ($('#bpl').val () || 0);
+        xml_options.n = parseInt ($('#cpl').val () || 0);
+        xml_options.c = parseInt ($('#crf').val () || 0);
+        xml_options.v = parseInt ($('#nvlt').val () || 0);
+        xml_options.d = parseInt ($('#den').val () || 0);
+        xml_options.m = parseInt ($('#midi').val () || 0);
+        xml_options.x = $('#nlb').prop ('checked') ? 1 : 0;
+        xml_options.noped = $('#noped').prop ('checked') ? 1 : 0;
+        xml_options.v1 = $('#v1').prop ('checked') ? 1 : 0;
+        xml_options.t = $('#tclef').prop ('checked') ? 1 : 0;
+        if ($('[type="radio"][value="2"]').prop ('checked')) {
+            var s = [ $('#scale').val (), $('#pwd').val (), $('#lftmrg').val (), $('#rgtmrg').val () ];
+            xml_options.p = s.join (',');
+        }
+        readFile (readEnc, '');
+    }
+}
+
+function showDlg (id) {
+    if (dlgOpen) return;
+    $(id).slideDown ();
+    dlgOpen = 1;
+}
+
+function hideDlg (id) {
+    $(id).slideUp ();
+    dlgOpen = 0;
+}
+
+$(document).ready (function () {
+    if (typeof FileReader !== 'undefined') {
+        $('#fileinput').change (function () {
+            drop_files = null;
+            readFile (readEnc, '');
+        });
+        $('#savebtn').click (saveABC)
+    } else {
+        $('#fileinput').attr ('disabled', true);
+        $('#notation').html ('<h3>your browser does not support the HTML5 FileReader</h3> (IE10+, FF, Chrome)')
+    }
+    $('#optbtn').click (function () { showDlg ('#opttxt'); });
+    $('#opttxt button').attr ('formaction', 'javascript:setOptions();');
+    $('#hlpbtn').click (function () { showDlg ('#hlptxt'); });
+    $('[type="radio"]').click (selectFmt);
+    var vtxt = 'xml2abc, version: ' + xml2abc_VERSION + '</br>©Willem Vree'
+    $('#hlptxt').prepend ('<p style="float:right; font-size:small">' + vtxt + '</p>');
+    $('#hlptxt button').click (function () { hideDlg ('#hlptxt'); });
+
+    $.event.props.push ( "dataTransfer" );      // make jQuery copy the dataTransfer attribute
+    $('#res').on ('drop', doDrop);
+    $('#res').on ('dragover', function (e) {    // this handler makes the element accept drops and generate drop-events
+        e.stopPropagation ();
+        e.preventDefault ();                    // the preventDefault is obligatory for drag/drop!
+        e.dataTransfer.dropEffect = 'copy';     // Explicitly show this is a copy.
+    });
+    $('#res').on ('dragenter dragleave', function () {
+        $(this).toggleClass ('indrag');
+    });
+
+});
+
+</script>
+<style>
+.rat { width: 100%; height:100%; margin:0px; overflow: auto; }
+#btns     { height:  5%; overflow: hidden; }
+#res      { height: 90%; overflow: hidden; }
+#err      { height:  5%; background-color: #eee;}
+#err:hover { height:  50%; position:absolute; top:50%; }
+#abc      { width: 50%;  display: inline-block; vertical-align: top; }
+#notation { width: 49%;  display: inline-block; vertical-align: top; }
+#fill     { width: 1%;   display: inline-block; }
+svg       { width: 100%; height: 50%; }
+#hlpbtn, #optbtn   { float: right; margin-right:10px; }
+#hlptxt, #opttxt   { display:none; position:absolute; border: 1px black solid; padding:5px; right: 30px; background-color: #eee}
+#hlptxt   { left: 30px; }
+#hlptxt button { float:right; }
+#opttxt button { float: right; }
+#opttxt div    { margin-bottom: 5px; }
+#opttxt label  { display:inline-block; width: 18em; }
+#opttxt span   { border: 1px solid #ccc; margin-left:10px; padding:1px; }
+#fmtdiv   { display: none; }
+.indrag   { background: #aaa; }
+</style>
+</head><body class="rat">
+<div class="rat" id="btns">
+    <label>MusicXML file: </label><input type="file" id="fileinput"/>
+    <label>Save ABC file: </label><button id="savebtn" disabled="true">save</button>
+    <button id="hlpbtn">help</button>
+    <button id="optbtn">Options</button>    
+</div>
+<form id="opttxt">
+    <div><label>Unfold repeats: </label><input id="unfld" type="checkbox"/></div>
+    <div><label>Bars per line: </label><input id="bpl" type="text" pattern="\d+" title="positive integer (default 0)"/></div>
+    <div><label>Characters per line: </label><input id="cpl" type="text" pattern="\d+" title="positive integer (default 100)"/></div>
+    <div><label>Credit text filter (level 0-6): </label><input id="crf" type="text" pattern="[0123456]" title="0 (default),1,2,3,4,5,6"/></div>
+    <div><label>No volta on higher voice numbers: </label><input id="nvlt" type="text" pattern="[01234]" title="0 (default),1,2,3,4"/></div>
+    <div><label>Denominator unit length (L:): </label><input id="den" type="text" pattern="\d\d?" title="0 (automatic),1,2,4,8,16 or 32"/></div>
+    <div><label>%%midi options: </label><input id="midi" type="text" pattern="[012]" title="0 (no midi), 1 (only program), 2 (all midi)"/></div>
+    <div><label>No score line breaks: </label><input id="nlb" type="checkbox"/></div>
+    <div><label>No pedal directions: </label><input id="noped" type="checkbox"/></div>
+    <div><label>All direcions to first voice: </label><input id="v1" type="checkbox"/></div>
+    <div><label>Clef dependent staff steps: </label><input id="tclef" type="checkbox"/></div>
+    <div>Page format:
+        <span>
+            Copy from xml<input type="radio" name="fmtrad" checked="true" value="0"/>
+            No format<input type="radio" name="fmtrad" value="1"/>
+            Specify<input type="radio" name="fmtrad" value="2"/>
+        </span>
+    </div>
+    <div id="fmtdiv">
+        <div><label>scale: </label><input id="scale" type="number" min="0.01" step="any" title="positive float (around 1.0)"/></div>
+        <div><label>page width: </label><input id="pwd" type="number" min="0" step="any" title="positive float"/></div>
+        <div><label>left margin: </label><input id="lftmrg" type="number" min="0" step="any" title="positive float"/></div>
+        <div><label>right margin: </label><input id="rgtmrg" type="number" min="0" step="any" title="positive float"/></div>
+    </div>
+    <button>Ok</button>
+</form>
+<div id="hlptxt">
+    <p>To use xml2abc-js in your own script call "vertaal ()" in the following way:</p>
+    <pre>
+        var xmldata = $.parseXML (abc_code);    // abc_code is a (unicode) string with one abc tune.
+
+        // the options are passed as a single object, where the members have the same name and value(s)
+        // as in xml2abc.py. Consult the readme of xml2abc.py for more information on these options.
+        // Here we just use the defaults by setting them to zero.
+
+        var options = { 'u':0, 'b':0, 'n':0,    // unfold repeats (1), bars per line, chars per line
+                        'c':0, 'v':0, 'd':0,    // credit text filter level (0-6), no volta on higher voice numbers (1), denominator unit length (L:)
+                        'm':0, 'x':0,           // with midi volume and panning (1), no line breaks (1)
+                        'v1':0, 'noped':0,      // all directions to first voice of staff (1), with pedal directions (1)
+                        'p':'f' };              // page format: scale (1.0), width, left- and right margin in cm
+
+        var result = vertaal (xmldata, options);
+        var abcText = result [0];               // the translation (string)
+        var errorTxt = result [1];              // all information and error messages (string)
+    </pre>
+    Notes:<ul>
+    <li>Function "vertaal ()" needs the xml document as a (parsed) DOM-tree. An easy way to achieve this is to use
+        the parseXML function in jquery, as shown in the usage example above.</li>
+    <li>Option <b>p</b> is different from xml2abc.py, in that it only accepts 4 floats: scale, width, left- and right margin.
+        In addition <b>p</b> can have the value 'f', or '' (empty string). With the empty string no page formatting is output at all. The
+        string 'f' causes translation of the pageformat defined in the xml file into corresponding abc %%-commands</li>
+    <li>The usage example above is taken from this page.</li>
+    </ul>
+    <button>Cancel</button>
+</div>
+<div class="rat" id="res" title="you can also drag/drop MusicXML files here">
+    <pre class="rat" id="abc"></pre>
+    <div class="rat" id="notation"></div>
+    <div class="rat" id="fill"></div>
+</div>
+<pre class="rat" id="err"></pre>
+<div id="saveDiv" style="display:none;"></div>
+</body></html>
