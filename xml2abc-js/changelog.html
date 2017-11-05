@@ -1,5 +1,13 @@
 <!DOCTYPE HTML><html><head><meta charset="utf-8"></head>
-<body><pre>Version 66:
+<body><pre>Version 68:
+- An xml file where the last part happened to be empty procuced no output at all, even when the other
+  parts did contain music.
+
+Version 67:
+- removed voice reordering for ottava annotations, because abc2svg is now capable of rendering ottava's
+  in any voice.
+
+Version 66:
 - translate pedal directions and ottava directions (8va, 8vb)
 - improved allocation of staff directions to ABC voices (wedges, ottava etc.). They are now put
   into the voice of the next note (if any) on the staff.

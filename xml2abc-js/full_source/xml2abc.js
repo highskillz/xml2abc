@@ -5,7 +5,7 @@
 //~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 //~ See the Lesser GNU General Public License for more details. <http://www.gnu.org/licenses/lgpl.html>.
 
-xml2abc_VERSION = 66;
+xml2abc_VERSION = 68;
 
 (function () {  // all definitions inside an anonymous function
 function repstr (n, s) { return new Array (n + 1).join (s); }   // repeat string s n times
@@ -629,6 +629,7 @@ function outVoice (measure, divs, im, ip, unitL) {    // note/elem objects of on
     vs = vs.join ('');  // ad hoc: remove multiple pedal directions
     while (vs.indexOf ('!ped!!ped!') >= 0) vs = vs.replace (/!ped!!ped!/g,'!ped!');
     while (vs.indexOf ('!ped-up!!ped-up!') >= 0) vs = vs.replace (/!ped-up!!ped-up!/g,'!ped-up!');
+    while (vs.indexOf ('!8va(!!8va)!') >= 0) vs = vs.replace (/!8va\(!!8va\)!/g,'');  // remove empty ottava's
     return vs;
 }
 
@@ -1401,20 +1402,6 @@ Parser.prototype.doDefaults = function ($e) {
     if (!abcOut.rightmargin && rightmargin != '') abcOut.rightmargin = (rightmargin * xmlScale).toFixed (2);
 }
 Parser.prototype.locStaffMap = function ($part, $maten) {   // map voice to staff with majority voting
-    function findVoiceOne (dit) {   // locate voice and staff of first ottava direction
-        var v = { sn:null, v:null, v1:null }
-        for (var j = 0; j < $maten.length; ++j) {
-            var $es = $maten.eq (j).children ();
-            for (var i = 0; i < $es.length; i++) {
-                var $e = $es.eq (i);    // jquery object
-                var x = $e.find ('direction-type>octave-shift');    // ottava directions
-                if (x.length && x.attr ('type') != 'stop') {        // only consider up/down directions
-                    return dit.findVoice (i, $es);
-                }
-            }
-        };
-        return v;   // no ottava found (or no note after ottava)
-    }
     var vmap = {};          // {voice -> {staff -> n}} count occurrences of voice in staff
     this.vceInst = {};      // {voice -> instrument id} for this part
     this.msc.vnums = {};    // voice id's
@@ -1444,8 +1431,6 @@ Parser.prototype.locStaffMap = function ($part, $maten) {   // map voice to staf
         this.stfMap [stf] = (this.stfMap [stf] || []).concat ([v]);
         this.curStf [v] = stf;  // current staff of XML voice v
     }
-    var x = findVoiceOne (this);    // x.v becomes first voice of staff x.sn
-    if (x.v) this.stfMap [x.sn] = [x.v].concat (this.stfMap [x.sn].filter (function (v) { return v != x.v; }));
 }
 Parser.prototype.addStaffMap = function (vvmap) {   // vvmap: xml voice number -> global abc voice number
     var i, j, iv, clef, voices, stf, locmap;
@@ -1491,6 +1476,7 @@ Parser.prototype.addMidiMap = function (ip, vvmap) {    // map abc voices to mid
     for (i = 0; i < xs.length; ++i) { vabc = xs [i][0]; midi = xs [i][1]; this.midiMap.push (midi); }
 }
 Parser.prototype.parse = function (xmltree) {
+    var vvmapAll = {};              // collect xml->abc voice maps (vvmap) of all parts
     var $e = $(xmltree);            // xmltree should be a DOM-tree
     this.mkTitle ($e);
     this.doDefaults ($e);
@@ -1550,8 +1536,9 @@ Parser.prototype.parse = function (xmltree) {
         var vvmap = this.msc.outVoices (this.msr.divs, ip);
         this.addStaffMap (vvmap);           // update global staff map
         this.addMidiMap (ip, vvmap);
+        Object.assign (vvmapAll, vvmap);
     }
-    if (Object.keys (vvmap).length) {
+    if (Object.keys (vvmapAll).length) {
         abcOut.mkHeader (this.gStfMap, partlist, this.midiMap);
         //~ abcOut.writeall ()
     } else infof ('nothing written, %s has no notes ...', [abcOut.fnmext]);

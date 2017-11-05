@@ -107,8 +107,6 @@ function doDrop (e) {
 
 function dolayout (abctxt) {
     function svg_out (str) {
-        var w = str.match (/width="(\d*)px"\s*height="(\d*)px"/);
-        if (w) str = str.replace ('>', ' viewBox="0 0 ' + w[1] +' '+ w[2] + '">');
         muziek += str;
     }
     var abc2svg;
@@ -117,6 +115,7 @@ function dolayout (abctxt) {
     $('#notation').html (muziek);
     if (abctxt.indexOf ('percmap') >= 0) abctxt = perc2map (abctxt);
     var user = {
+        'imagesize': 'width="100%"',
         'img_out': svg_out,
         'errmsg': function errmsg (txt) { errtxt += txt + '\n' },
         'read_file': function (x) { return ''; },   // %%abc-include, unused
@@ -237,8 +236,7 @@ $(document).ready (function () {
 #err      { height:  5%; background-color: #eee;}
 #err:hover { height:  50%; position:absolute; top:50%; }
 #abc      { width: 50%;  display: inline-block; vertical-align: top; }
-#notation { width: 49%;  display: inline-block; vertical-align: top; }
-#fill     { width: 1%;   display: inline-block; }
+#notation { width: 50%;  display: inline-block; vertical-align: top; }
 svg       { width: 100%; height: 50%; }
 #hlpbtn, #optbtn   { float: right; margin-right:10px; }
 #hlptxt, #opttxt   { display:none; position:absolute; border: 1px black solid; padding:5px; right: 30px; background-color: #eee}
@@ -315,9 +313,8 @@ svg       { width: 100%; height: 50%; }
     <button>Cancel</button>
 </div>
 <div class="rat" id="res" title="you can also drag/drop MusicXML files here">
-    <pre class="rat" id="abc"></pre>
-    <div class="rat" id="notation"></div>
-    <div class="rat" id="fill"></div>
+    <pre class="rat" id="abc"></pre><!-- no space here because it is rendered!
+    --><div class="rat" id="notation"></div>
 </div>
 <pre class="rat" id="err"></pre>
 <div id="saveDiv" style="display:none;"></div>
