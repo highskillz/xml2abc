@@ -1,0 +1,29 @@
+{
+  "name": "abc2web",
+  "version": "1.42.0",
+  "description": "Unofficial package for unofficial fork of Wim Vree's excellent abcweb (https://wim.vree.org/js/).",
+  "files": [
+    "LICENSE",
+    "abc2web.js",
+    "abc2web.nomin.js",
+    "changes.txt"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/highskillz/xml2abc.git"
+  },
+  "keywords": [
+    "ABC",
+    "MusicXML",
+    "music"
+  ],
+  "author": "HighSkillz",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/highskillz/xml2abc/issues"
+  },
+  "homepage": "https://github.com/highskillz/xml2abc"
+}

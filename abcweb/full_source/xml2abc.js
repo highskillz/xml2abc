@@ -1,12 +1,11 @@
-//~ Copyright (C) 2014-2016: Willem Vree
+//~ Copyright (C) 2014-2017: Willem Vree
 //~ This program is free software; you can redistribute it and/or modify it under the terms of the
-//~ GNU General Public License as published by the Free Software Foundation; either version 2 of
-//~ the License, or (at your option) any later version.
+//~ Lesser GNU General Public License as published by the Free Software Foundation;
 //~ This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
 //~ without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-//~ See the GNU General Public License for more details. <http://www.gnu.org/licenses/gpl.html>.
+//~ See the Lesser GNU General Public License for more details. <http://www.gnu.org/licenses/lgpl.html>.
 
-xml2abc_VERSION = 64;
+xml2abc_VERSION = 68;
 
 (function () {  // all definitions inside an anonymous function
 function repstr (n, s) { return new Array (n + 1).join (s); }   // repeat string s n times
@@ -136,7 +135,7 @@ function Music (options) {
     this.maxtime = 0;       // maximum time in a measure
     this.gMaten = [];       // [voices,.. for all measures in a part], voices = {vnum: [Note | Elem]}
     this.gLyrics = [];      // [{num: (abc_lyric_string, melis)},.. for all measures in a part]
-    this.vnums = {};        // all used xml voice id's in a part
+    this.vnums = {};        // all used xml voice id's in a part (xml voice id's == numbers)
     this.cnt = new Counter ();  // global counter object
     this.vceCnt = 1;        // the global voice count over all parts
     this.lastnote = null;   // the last real note record inserted in this.voices
@@ -172,6 +171,11 @@ Music.prototype.appendObj = function (v, obj, dur) {
     this.voices [v].push (obj);
     this.incTime (dur);
     if (this.tijd > this.vtimes[v]) this.vtimes[v] = this.tijd;  // don't update for inserted earlier items
+}
+Music.prototype.appendElemT = function (v, elem, tijd) {    // insert element at specified time
+    var obj = new Elem (elem);
+    obj.tijd = tijd;
+    this.voices [v].push (obj);
 }
 Music.prototype.appendElem = function (v, elem, tel) {
     this.appendObj (v, new Elem (elem), 0);
@@ -622,7 +626,11 @@ function outVoice (measure, divs, im, ip, unitL) {    // note/elem objects of on
         if (nospace) vs.push (s);
         else vs.push (' ' + s);
     }
-    return vs.join ('');
+    vs = vs.join ('');  // ad hoc: remove multiple pedal directions
+    while (vs.indexOf ('!ped!!ped!') >= 0) vs = vs.replace (/!ped!!ped!/g,'!ped!');
+    while (vs.indexOf ('!ped-up!!ped-up!') >= 0) vs = vs.replace (/!ped-up!!ped-up!/g,'!ped-up!');
+    while (vs.indexOf ('!8va(!!8va)!') >= 0) vs = vs.replace (/!8va\(!!8va\)!/g,'');  // remove empty ottava's
+    return vs;
 }
 
 function sortMeasure (voice, m) {
@@ -870,7 +878,7 @@ function getMelisma (maat) {            // get melisma from notes in maat
 //----------------
 function Parser (options) {
     this.slurBuf = {};    // dict of open slurs keyed by slur number
-    this.wedge_type = ''; // remembers the type of the last open wedge (for proper closing)
+    this.dirStk = {};     // {direction-type + number -> (type, voice | time)} dict for proper closing
     this.ingrace = 0;     // marks a sequence of grace notes
     this.msc = new Music (options); // global music data abstraction
     this.unfold = options.u; // turn unfolding repeats on
@@ -891,6 +899,9 @@ function Parser (options) {
     this.nolbrk = options.x; // generate no linebreaks ($)
     this.doPageFmt = options.p.length == 1; // translate xml page format
     this.tstep = options.t; // clef determines step on staff (percussion)
+    this.dirtov1 = options.v1;  // all directions to first voice of staff
+    this.ped = !options.noped;  // render pedal directions
+    this.pedVce = null;     // voice for pedal directions
 }
 Parser.prototype.matchSlur = function (type2, n, v2, note2, grace, stopgrace) { // match slur number n in voice v2, add abc code to before/after
     if (['start', 'stop'].indexOf (type2) == -1) return;    // slur type continue has no abc equivalent
@@ -922,8 +933,9 @@ Parser.prototype.doNotations = function (note, $nttn) {
         if ($nttn.find (key).length) note.before += val;    // just concat all ornaments
     }
     var $fingering = $nttn.find ('technical>fingering');
-    if ($fingering.length)   // strings or plug not supported in ABC
-        note.before += '!' + $fingering.text () + '!';  // validate text?
+    $fingering.each (function () {  // handle multiple finger annotations
+        note.before += '!' + $(this).text () + '!';  // validate text?
+    });
     var $wvln = $nttn.find ('ornaments>wavy-line');
     if ($wvln.length) {
         switch ($wvln.attr ('type')) {
@@ -953,8 +965,8 @@ Parser.prototype.ntAbc = function (ptc, o, $note, v) {  // pitch, octave -> abc 
         if (p_v in this.curalts) {  // the note in this voice has been altered before
             if (alt == this.curalts [p_v]) return p;            // alteration still the same
         } else if (alt == (this.msralts [ptc] || 0)) return p;  // alteration implied by the key
-        var xs = $note.find ('tie').map (function () { return $(this).attr ('type') }).get ();
-        if (xs.some (function (x) { return x == 'stop' })) return p;    // don't alter tied notes
+        var xs = $note.find ('tie').add ($note.find ('notations>tied')).get (); // in xml we have separate notated ties and playback ties
+        if (xs.some (function (x) { return x.getAttribute ('type') == 'stop'; })) return p; // don't alter tied notes
         infof ('accidental %d added in part %d, measure %d, voice %d note %s', [alt, this.msr.ixp+1, this.msr.ixm+1, v+1, p] );
     }
     this.curalts [p_v] = alt;
@@ -1018,8 +1030,9 @@ Parser.prototype.doNote = function ($n) {
         if (nh == 'circle-x' || nh == 'diamond') noot = '_' + noot.replace (/\^/g,'').replace (/_/g,'');
         this.drumNotes [v+';'+noot] = [step, midi, nh]; // keep data for percussion map
     }
-    var xs = $n.find ('tie').map (function () { return $(this).attr ('type'); }).get ();
-    if (xs.indexOf ('start') > -1) noot += '-';  // n can have stop and start tie    
+    var xs = $n.find ('tie').add ($n.find ('notations>tied')).get ();   // array of dom elements
+    if (xs.some (function (x) { return x.getAttribute ('type') == 'start'; }))  // n can have stop and start tie
+        noot += '-';
     xs = $n.find ('beam').map (function () { return $(this).text (); }).get ();
     note.beam = xs.indexOf ('continue') > -1 || xs.indexOf ('end') > -1 || note.grace;
     xs = $n.find ('lyric'); var lyrlast = 0;
@@ -1104,11 +1117,74 @@ Parser.prototype.doAttr = function ($e) {
         }
     }
 }
-Parser.prototype.doDirection = function ($e) {  // parse a musicXML direction tag
-    var plcmnt, t, tempo, stfnum, dirtyp, vs, type, x, txt, plc, plcmnt, key, val, minst, prg, chn, v, parm, inst, wrds;
-    stfnum = parseInt ($e.find ('staff').first().text () || '1');   // directions belong to a staff
-    vs = this.stfMap [stfnum][0];           // directions to first voice of staff
+Parser.prototype.findVoice = function (i, $es) {
+    var stfnum, v1, $e, k, stf, v;
+    $e = $es.eq (i);
+    stfnum = parseInt ($e.find ('staff').text () || '1');   // directions belong to a staff
+    v1 = this.stfMap [stfnum][0];           // directions to first voice of staff
+    if (this.dirtov1) return { sn:stfnum, v:v1, v1:v1 }     // option --v1
+    for (k = i; k < $es.length; ++k) {
+        $e = $es.eq (k);
+        if ($e.prop ('nodeName') == 'note') {
+            stf = parseInt ($e.find ('staff').text () || '1')
+            v = parseInt ($e.find ('voice').text () || '1')
+            if (this.isSib) v += 100 * stf; // repair bug in Sibelius
+            return { sn:stf, v:v, v1:v1 };  // voice of next note, first voice of staff
+        }
+        if ($e.prop ('nodeName') == 'backup') break
+    }
+    return { sn:stfnum, v:v1, v1:v1 };      // no note found, fall back to v1
+}
+Parser.prototype.doDirection = function ($e, i, $es) {  // parse a musicXML direction tag
+    var plcmnt, t, tempo, stfnum, dirtyp, vs, type, x, txt, plc, plcmnt, key, val, minst, prg, chn, v, parm, inst, wrds, stf, v1;
+    function addDirection (dit, x, vs, tijd, stfnum) {
+        if (!x) return;
+        vs = x.indexOf ('!8v') >= 0 ? dit.stfMap [stfnum] : [vs]; // ottava's go to all voices of staff
+        vs.forEach (function (v) {
+            if (tijd != null)       // insert at time of encounter
+                dit.msc.appendElemT (v, x.replace ('(',')').replace ('ped','ped-up'), tijd);
+            else
+                dit.msc.appendElem (v, x);
+        });
+    }
+    function startStop (dit, dtype, vs, stfnum) {
+        var k, sk, x;
+        typmap = {'down':'!8va(!', 'up':'!8vb(!', 'crescendo':'!<(!', 'diminuendo':'!>(!', 'start':'!ped!'}
+        type = t.attr ('type') || '';
+        k = dtype + (t.attr ('number') || '1');   // key to match the closing direction
+        if (type in typmap) {                   // opening the direction
+            x = typmap [type];
+            if (k in dit.dirStk) {             // closing direction already encountered
+                sk = dit.dirStk [k]; delete dit.dirStk [k];
+                if (sk.type == 'stop')
+                    addDirection (dit, x, vs, sk.tijd, stfnum);
+                else {
+                    infof ('%s direction %s has no stop in part %d, measure %d, voice %d', [dtype, sk.type, dit.msr.ixp+1, dit.msr.ixm+1, vs+1]);
+                    dit.dirStk [k] = { type:type , vs:vs };    // remember voice and type for closing
+                }
+            } else {
+                dit.dirStk [k] = { type:type , vs:vs };        // remember voice and type for closing
+            }
+        } else if (type == 'stop') {
+            if (k in dit.dirStk) {             // matching open direction found
+                sk = dit.dirStk [k]; delete dit.dirStk [k];   // into the same voice
+                type = sk.type; vs = sk.vs;    // same values as opening direction
+                if (type == 'stop') {
+                    infof ('%s direction %s has double stop in part %d, measure %d, voice %d', [dtype, type, dit.msr.ixp+1, dit.msr.ixm+1, vs+1]);
+                    x = '';
+                } else {
+                    x = typmap [sk.type].replace ('(',')').replace ('ped','ped-up');
+                }
+            } else {                            // closing direction found before opening
+                dit.dirStk [k] = { type:'stop', tijd: dit.msc.tijd };
+                x = ''                          // delay code generation until opening found
+            }
+        } else throw 'wrong direction type';
+        addDirection (dit, x, vs, null, stfnum);
+    }
     plcmnt = $e.attr ('placement');
+    x = this.findVoice (i, $es);
+    stf = x.sn; vs = x.v, v1 = x.v1;
     t = $e.find ('sound')        // there are many possible attributes for sound
     if (t.length) {
         minst = t.find ('midi-instrument');
@@ -1127,24 +1203,13 @@ Parser.prototype.doDirection = function ($e) {  // parse a musicXML direction ta
             if (tempo.indexOf ('.') > -1) tempo = parseFloat (tempo).toFixed (2); // hope it is a number and insert in voice 1
             else                          tempo = parseInt (tempo);
             if (this.msc.tijd == 0 && this.msr.ixm == 0) abcOut.tempo = tempo; // first measure -> header
-            else this.msc.appendElem (vs, '[Q:1/4=' + tempo + ']'); // otherwise -> first voice
+            else this.msc.appendElem (v1, '[Q:1/4=' + tempo + ']'); // otherwise -> first voice
         }
     }
     dirtyp = $e.children ('direction-type');
     if (dirtyp.length) {
         t = dirtyp.find ('wedge');
-        if (t.length) {
-            switch (t.attr ('type')) {
-            case 'crescendo': x = '!<(!'; this.wedge_type = '<'; break;
-            case 'diminuendo': x = '!>(!'; this.wedge_type = '>'; break;
-            case 'stop':
-                if (this.wedge_type == '<') x = '!<)!';
-                else                        x = '!>)!';
-                break;
-            default: raise ('wrong wedge type');
-            }
-            this.msc.appendElem (vs, x);        // to first voice
-        }
+        if (t.length) startStop (this, 'wedge', vs);
         wrds = dirtyp.find ('words').eq (0);
         if (wrds.length == 0) wrds = dirtyp.find ('rehearsal').eq (0);  // treat rehearsal mark as text annotation
         if (wrds.length) {
@@ -1160,12 +1225,18 @@ Parser.prototype.doDirection = function ($e) {  // parse a musicXML direction ta
         }
         if (dirtyp.find ('coda').length) this.msc.appendElem (vs, 'O', 1);
         if (dirtyp.find ('segno').length) this.msc.appendElem (vs, 'S', 1);
+        t = dirtyp.find ('octave-shift');
+        if (t.length) startStop (this, 'octave-shift', vs, stf);  // assume size == 8 for the time being
+        t = dirtyp.find ('pedal');
+        if (t.length && this.ped) {
+            if (!this.pedVce) this.pedVce = vs;
+            startStop (this, 'pedal', this.pedVce);
+        }
     }
 }
-Parser.prototype.doHarmony = function ($e) {    // parse a musicXMl harmony tag
+Parser.prototype.doHarmony = function ($e, i, $es) {    // parse a musicXMl harmony tag
     var stfnum, vt, kort, accmap, modmap, altmap, root, alt, sus, kind, triad, mod, degrees, bass, i, $d, t;
-    stfnum = parseInt ($e.children ('staff').text () || '1');   // harmony belongs to a staff
-    vt = this.stfMap [stfnum][0];               // harmony to first voice of staff
+    vt = this.findVoice (i, $es).v;     // find voice for this chord
     kort   = {'major':'', 'minor':'m', 'augmented':'+', 'diminished':'dim', 'dominant':'7', 'half-diminished':'m7b5'};
     accmap = {'major':'maj', 'dominant':'', 'minor':'m', 'diminished':'dim', 'augmented':'+', 'suspended':'sus'};
     modmap = {'second':'2', 'fourth':'4', 'seventh':'7', 'sixth':'6', 'ninth':'9', '11th':'11', '13th':'13'};
@@ -1330,7 +1401,7 @@ Parser.prototype.doDefaults = function ($e) {
     if (!abcOut.leftmargin && leftmargin != '') abcOut.leftmargin = (leftmargin * xmlScale).toFixed (2);
     if (!abcOut.rightmargin && rightmargin != '') abcOut.rightmargin = (rightmargin * xmlScale).toFixed (2);
 }
-Parser.prototype.locStaffMap = function ($part) {   // map voice to staff with majority voting
+Parser.prototype.locStaffMap = function ($part, $maten) {   // map voice to staff with majority voting
     var vmap = {};          // {voice -> {staff -> n}} count occurrences of voice in staff
     this.vceInst = {};      // {voice -> instrument id} for this part
     this.msc.vnums = {};    // voice id's
@@ -1367,14 +1438,14 @@ Parser.prototype.addStaffMap = function (vvmap) {   // vvmap: xml voice number -
     var staff_keys = Object.keys (this.stfMap).sort ();
     for (j = 0; j < staff_keys.length; ++j) {   // scan stfMap in alphabetical (xml) staff number order
         stf = staff_keys [j];
-        voices = this.stfMap [stf];     // s.stfMap has xml staff and voice numbers
+        voices = this.stfMap [stf];     // this.stfMap has xml staff and voice numbers
         locmap = [];
         for (i = 0; i < voices.length; ++i) {   // voices is an array of xml voice numbers
             iv = voices [i];            // xml voice number
             if (iv in vvmap) locmap.push (vvmap [iv]);
         }
         if (locmap.length) {            // abc voice number of staff stf
-            part.push (locmap.sort ()); // alphabetical order of xml voice numbers
+            part.push (locmap);
             clef = stf in this.clefMap ? this.clefMap [stf] : 'treble'; // {xml staff number -> clef}
             for (i = 0; i < locmap.length; ++i) {
                 iv = locmap [i];
@@ -1405,15 +1476,16 @@ Parser.prototype.addMidiMap = function (ip, vvmap) {    // map abc voices to mid
     for (i = 0; i < xs.length; ++i) { vabc = xs [i][0]; midi = xs [i][1]; this.midiMap.push (midi); }
 }
 Parser.prototype.parse = function (xmltree) {
+    var vvmapAll = {};              // collect xml->abc voice maps (vvmap) of all parts
     var $e = $(xmltree);            // xmltree should be a DOM-tree
     this.mkTitle ($e);
     this.doDefaults ($e);
     partlist = this.doPartList ($e);
     var parts = $e.find ('part');
     for (var ip = 0; ip < parts.length; ++ip) {
-        var $p = $(parts [ip]);
+        var $p = parts.eq (ip);
         var $maten = $p.find ('measure');
-        this.locStaffMap ($p);      // {voice -> staff} for this part
+        this.locStaffMap ($p, $maten);  // {voice -> staff} for this part
         this.drumNotes = {};        // 'xml_voice;abc_note' -> (midi note, note head)
         this.clefOct = {};          // xml staff number -> current clef-octave-change
         this.msc.initVoices (1);    // create all voices
@@ -1421,20 +1493,20 @@ Parser.prototype.parse = function (xmltree) {
         var herhaalMaat = 0;        // target measure of the repitition
         this.msr = new Measure (ip);    // various measure data
         while (this.msr.ixm < $maten.length) {
-            var $maat = $($maten [this.msr.ixm]);
+            var $maat = $maten.eq (this.msr.ixm);
             var herhaal = 0, lbrk = '';
             this.msr.reset ();
             this.curalts = {};      // passing accidentals are reset each measure
             var $es = $maat.children ();
             for (var i = 0; i < $es.length; i++) {
-                var e = $es[i];
-                var $e = $(e);
+                var $e = $es.eq (i);    // jquery object
+                var e = $e [0];         // same, but dom object
                 switch (e.nodeName) {
                 case 'note':        this.doNote ($e); break;
                 case 'attributes':  this.doAttr ($e); break;
-                case 'direction':   this.doDirection ($e); break;
-                case 'sound':       this.doDirection ($maat); break;    // sound element directly in measure!
-                case 'harmony':     this.doHarmony ($e); break;
+                case 'direction':   this.doDirection ($e, i, $es); break;
+                case 'sound':       this.doDirection ($maat, i, $es); break; // sound element directly in measure!
+                case 'harmony':     this.doHarmony ($e, i, $es); break;
                 case 'barline': herhaal = this.doBarline ($e); break;
                 case 'backup':
                     var dt = parseInt ($e.find ('duration').text ());
@@ -1464,8 +1536,9 @@ Parser.prototype.parse = function (xmltree) {
         var vvmap = this.msc.outVoices (this.msr.divs, ip);
         this.addStaffMap (vvmap);           // update global staff map
         this.addMidiMap (ip, vvmap);
+        Object.assign (vvmapAll, vvmap);
     }
-    if (Object.keys (vvmap).length) {
+    if (Object.keys (vvmapAll).length) {
         abcOut.mkHeader (this.gStfMap, partlist, this.midiMap);
         //~ abcOut.writeall ()
     } else infof ('nothing written, %s has no notes ...', [abcOut.fnmext]);
@@ -1476,6 +1549,7 @@ vertaal = function (xmltree, options_parm) {   // publish in the global name spa
     var options = { 'u':0, 'b':0, 'n':0,    // unfold repeats (1), bars per line, chars per line
                     'c':0, 'v':0, 'd':0,    // credit text filter level (0-6), no volta on higher voice numbers (1), denominator unit length (L:)
                     'm':0, 'x':0, 't':0,    // no midi, minimal midi, all midi output (0,1,2), no line breaks (1), clef dependent step value (1)
+                    'v1':0, 'noped':0,      // all directions to first voice of staff (1), no pedal directions (1)
                     'p':'f' };              // page format: scale (1.0), width, left- and right margin in cm
     for (var opt in options_parm) options [opt] = options_parm [opt];
     options.p = options.p ? options.p.split (',') : []          // [] | [string]
