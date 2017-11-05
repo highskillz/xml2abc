@@ -1,0 +1,29 @@
+{
+  "name": "xml2abc",
+  "version": "1.68.3",
+  "description": "Unofficial package for unofficial fork of Wim Vree's excellent xml2abc-js (https://wim.vree.org/js/xml2abc-js_index.html).",
+  "files": [
+    "LICENSE",
+    "xml2abc.js",
+    "xml2abc.nomin.js",
+    "changelog.html"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/highskillz/xml2abc.git"
+  },
+  "keywords": [
+    "ABC",
+    "MusicXML",
+    "music"
+  ],
+  "author": "HighSkillz",
+  "license": "LGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/highskillz/xml2abc/issues"
+  },
+  "homepage": "https://github.com/highskillz/xml2abc"
+}
