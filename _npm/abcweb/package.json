@@ -1,6 +1,6 @@
 {
   "name": "abc2web",
-  "version": "1.42.0",
+  "version": "1.42.1",
   "description": "Unofficial package for unofficial fork of Wim Vree's excellent abcweb (https://wim.vree.org/js/).",
   "files": [
     "LICENSE",
